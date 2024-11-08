@@ -4,9 +4,11 @@ pub enum PlanetType {
     Mercury,
     Venus,
     Earth,
+    Moon,
     Mars,
     Jupiter,
     Saturn,
     Uranus,
     Neptune,
+    BlackHole,
 }

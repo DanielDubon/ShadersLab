@@ -57,11 +57,13 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms, planet_type: &P
             let cloud_color = cloud_shader(fragment, uniforms);
             blend_layers(earth_color, cloud_color)
         },
+        PlanetType::Moon => moon_shader(fragment, uniforms),
         PlanetType::Mars => mars_shader(fragment, uniforms),
         PlanetType::Jupiter => jupiter_shader(fragment, uniforms),
         PlanetType::Saturn => saturn_shader(fragment, uniforms),
         PlanetType::Uranus => uranus_shader(fragment, uniforms),
         PlanetType::Neptune => neptune_shader(fragment, uniforms),
+        PlanetType::BlackHole => black_hole_shader(fragment, uniforms),
     }
 }
 
@@ -326,31 +328,58 @@ fn jupiter_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 }
 
 fn saturn_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
-    // Similar a Júpiter pero con tonos más amarillentos
-    let light_band = Color::new(255, 240, 200);  // Amarillo claro
-    let dark_band = Color::new(200, 180, 140);   // Amarillo oscuro
+    // Colores para Saturno y sus anillos
+    let planet_light = Color::new(255, 240, 200);  // Color claro del planeta
+    let planet_dark = Color::new(200, 180, 140);   // Color oscuro del planeta
+    let ring_light = Color::new(210, 190, 170);    // Color claro del anillo
+    let ring_dark = Color::new(160, 140, 120);     // Color oscuro del anillo
     
     let position = fragment.vertex_position;
-    let t = uniforms.time as f32 * 0.08;
+    let normal = fragment.normal;
     
-    // Bandas horizontales
-    let band_zoom = 120.0;
-    let bands = uniforms.noise.get_noise_2d(
-        position.y * band_zoom,
-        t
-    ).abs();
+    // Calcular distancia desde el centro
+    let radius = (position.x * position.x + position.z * position.z).sqrt();
+    let y_abs = position.y.abs();
     
-    // Turbulencia sutil
-    let turb_zoom = 350.0;
-    let turbulence = uniforms.noise.get_noise_3d(
-        position.x * turb_zoom + t,
-        position.y * turb_zoom,
-        position.z * turb_zoom
-    ).abs();
+    // Definir los parámetros del anillo
+    let ring_inner = 1.2;    // Donde comienza el anillo (justo fuera del planeta)
+    let ring_outer = 2.5;    // Donde termina el anillo
+    let ring_thickness = 0.1; // Grosor del anillo
     
-    let final_color = light_band.lerp(&dark_band, bands * (1.0 - turbulence * 0.3));
+    // Determinar si estamos en el anillo
+    let in_ring = radius >= ring_inner && 
+                  radius <= ring_outer && 
+                  y_abs <= ring_thickness;
     
-    final_color * fragment.intensity
+    if in_ring {
+        // Patrón de anillos concéntricos
+        let ring_pattern = ((radius * 20.0).sin() * 0.5 + 0.5).abs();
+        
+        // Variación adicional en los anillos
+        let detail = uniforms.noise.get_noise_2d(
+            radius * 15.0,
+            position.z.atan2(position.x) * 5.0
+        ).abs();
+        
+        // Combinar patrones
+        let ring_factor = ring_pattern * 0.7 + detail * 0.3;
+        
+        // Color final del anillo
+        let ring_color = ring_light.lerp(&ring_dark, ring_factor);
+        
+        // Aplicar sombreado basado en la normal
+        let light_factor = normal.dot(&Vec3::new(0.0, 1.0, 0.0)).abs();
+        ring_color * fragment.intensity * light_factor.max(0.2)
+    } else {
+        // Color del planeta con bandas
+        let t = uniforms.time as f32 * 0.08;
+        let bands = uniforms.noise.get_noise_2d(
+            position.y * 120.0,
+            t
+        ).abs();
+        
+        planet_light.lerp(&planet_dark, bands) * fragment.intensity
+    }
 }
 
 fn uranus_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
@@ -400,4 +429,93 @@ fn neptune_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
     let final_color = base_color.lerp(&storm_color, (storms + bands * 0.5) * 0.4);
     
     final_color * fragment.intensity
+}
+
+fn moon_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    // Colores base para la luna
+    let dark_color = Color::new(100, 100, 100);   // Gris oscuro
+    let light_color = Color::new(200, 200, 200);  // Gris claro
+    let crater_color = Color::new(80, 80, 80);    // Gris más oscuro para cráteres
+    
+    let position = fragment.vertex_position;
+    let zoom = 400.0;
+    
+    // Ruido base para el terreno lunar
+    let terrain = uniforms.noise.get_noise_3d(
+        position.x * zoom,
+        position.y * zoom,
+        position.z * zoom
+    ).abs();
+    
+    // Ruido adicional para cráteres
+    let crater_zoom = 800.0;
+    let craters = uniforms.noise.get_noise_3d(
+        position.x * crater_zoom,
+        position.y * crater_zoom,
+        position.z * crater_zoom
+    ).abs();
+    
+    let base_color = dark_color.lerp(&light_color, terrain);
+    let final_color = if craters > 0.7 {
+        base_color.lerp(&crater_color, 0.5)
+    } else {
+        base_color
+    };
+    
+    final_color * fragment.intensity
+}
+
+fn black_hole_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    let position = fragment.vertex_position;
+    
+    // Colores psicodélicos
+    let core_color = Color::new(0, 0, 0);           // Centro negro
+    let inner_color = Color::new(255, 0, 255);      // Magenta brillante
+    let outer_color = Color::new(147, 0, 255);      // Morado
+    let space_color = Color::new(75, 0, 130);       // Índigo oscuro
+    
+    // Calcular distancia desde el centro
+    let radius = (position.x * position.x + position.z * position.z).sqrt();
+    
+    // Tiempo para animación
+    let t = uniforms.time as f32 * 0.05;
+    
+    // Efecto de vórtice
+    let angle = position.z.atan2(position.x) + t;
+    let spiral = (angle * 5.0 + radius * 10.0 + t).sin() * 0.5 + 0.5;
+    
+    // Efecto de pulso
+    let pulse = (t * 2.0).sin() * 0.5 + 0.5;
+    
+    // Distorsión del espacio
+    let distortion = 1.0 / (radius + 0.5);
+    
+    // Patrones de ruido para más detalle
+    let noise = uniforms.noise.get_noise_3d(
+        position.x * 2.0 + t,
+        position.y * 2.0,
+        position.z * 2.0 - t
+    ).abs();
+    
+    // Combinar efectos
+    let effect = (spiral + noise + pulse) / 3.0;
+    
+    if radius < 0.3 {
+        // Centro del agujero negro (siempre negro)
+        core_color
+    } else if radius < 1.0 {
+        // Región interna psicodélica
+        let factor = ((radius - 0.3) / 0.7).powf(0.5);
+        let base = core_color.lerp(&inner_color, factor * effect);
+        base * (distortion * 0.5)
+    } else if radius < 2.0 {
+        // Región externa con vórtice
+        let factor = ((radius - 1.0) / 1.0).powf(0.5);
+        let base = inner_color.lerp(&outer_color, factor * effect);
+        base * ((3.0 - radius) * 0.5)
+    } else {
+        // Espacio exterior con distorsión
+        let fade = (1.0 / (radius - 1.5)).min(1.0);
+        outer_color.lerp(&space_color, fade) * (0.5 * fade)
+    }
 }

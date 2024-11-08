@@ -232,7 +232,7 @@ fn main() {
     };
 
     
-    let celestial_bodies = vec![
+    let mut celestial_bodies = vec![
         CelestialBody {
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: 2.0,
@@ -272,7 +272,7 @@ fn main() {
         CelestialBody {
             position: Vec3::new(40.0, 0.0, 0.0),
             scale: 1.3,
-            rotation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Vec3::new(0.2, 0.0, 0.0),
             shader_type: PlanetType::Saturn,
         },
         CelestialBody {
@@ -287,6 +287,18 @@ fn main() {
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Neptune,
         },
+        CelestialBody {
+            position: Vec3::new(18.0, 0.0, 2.0),
+            scale: 0.2,
+            rotation: Vec3::new(0.0, 0.0, 0.0),
+            shader_type: PlanetType::Moon,
+        },
+        CelestialBody {
+            position: Vec3::new(-20.0, 0.0, -20.0),
+            scale: 4.0,
+            rotation: Vec3::new(0.0, 0.0, 0.0),
+            shader_type: PlanetType::BlackHole,
+        },
     ];
 
     while window.is_open() {
@@ -299,6 +311,27 @@ fn main() {
         handle_input(&window, &mut camera);
 
         framebuffer.clear();
+
+        // Encontrar la posición de la Tierra
+        let earth_position = celestial_bodies.iter()
+            .find(|body| matches!(body.shader_type, PlanetType::Earth))
+            .map(|body| body.position)
+            .unwrap_or(Vec3::new(0.0, 0.0, 0.0));
+
+        // Actualizar la posición de la luna
+        let moon_orbit_radius = 2.0;
+        let moon_orbit_speed = 0.03;
+        let moon_angle = time as f32 * moon_orbit_speed;
+        
+        if let Some(moon) = celestial_bodies.iter_mut()
+            .find(|body| matches!(body.shader_type, PlanetType::Moon))
+        {
+            moon.position = earth_position + Vec3::new(
+                moon_orbit_radius * moon_angle.cos(),
+                0.0,
+                moon_orbit_radius * moon_angle.sin()
+            );
+        }
 
         // Renderizar cada cuerpo celeste
         for body in &celestial_bodies {
