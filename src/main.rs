@@ -240,49 +240,49 @@ fn main() {
             shader_type: PlanetType::Sun,
         },
         CelestialBody {
-            position: Vec3::new(3.0, 0.0, 0.0),
+            position: Vec3::new(6.0, 0.0, 0.0),
             scale: 0.4,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Mercury,
         },
         CelestialBody {
-            position: Vec3::new(5.0, 0.0, 0.0),
+            position: Vec3::new(12.0, 0.0, 0.0),
             scale: 0.6,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Venus,
         },
         CelestialBody {
-            position: Vec3::new(7.0, 0.0, 0.0),
+            position: Vec3::new(18.0, 0.0, 0.0),
             scale: 0.7,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Earth,
         },
         CelestialBody {
-            position: Vec3::new(9.0, 0.0, 0.0),
+            position: Vec3::new(24.0, 0.0, 0.0),
             scale: 0.5,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Mars,
         },
         CelestialBody {
-            position: Vec3::new(12.0, 0.0, 0.0),
+            position: Vec3::new(32.0, 0.0, 0.0),
             scale: 1.5,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Jupiter,
         },
         CelestialBody {
-            position: Vec3::new(15.0, 0.0, 0.0),
+            position: Vec3::new(40.0, 0.0, 0.0),
             scale: 1.3,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Saturn,
         },
         CelestialBody {
-            position: Vec3::new(18.0, 0.0, 0.0),
+            position: Vec3::new(48.0, 0.0, 0.0),
             scale: 0.9,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Uranus,
         },
         CelestialBody {
-            position: Vec3::new(21.0, 0.0, 0.0),
+            position: Vec3::new(56.0, 0.0, 0.0),
             scale: 0.9,
             rotation: Vec3::new(0.0, 0.0, 0.0),
             shader_type: PlanetType::Neptune,
@@ -320,47 +320,48 @@ fn main() {
 }
 
 fn handle_input(window: &Window, camera: &mut Camera) {
-    let movement_speed = 1.0;
+    let movement_speed = 0.5;
     let rotation_speed = PI/50.0;
-    let zoom_speed = 0.1;
+    let zoom_speed = 1.0;
 
-    //  camera orbit controls
-    if window.is_key_down(Key::Left) {
-        camera.orbit(rotation_speed, 0.0);
-    }
-    if window.is_key_down(Key::Right) {
-        camera.orbit(-rotation_speed, 0.0);
-    }
-    if window.is_key_down(Key::W) {
-        camera.orbit(0.0, -rotation_speed);
-    }
-    if window.is_key_down(Key::S) {
-        camera.orbit(0.0, rotation_speed);
-    }
-
-    // Camera movement controls
-    let mut movement = Vec3::new(0.0, 0.0, 0.0);
-    if window.is_key_down(Key::A) {
-        movement.x -= movement_speed;
-    }
-    if window.is_key_down(Key::D) {
-        movement.x += movement_speed;
-    }
-    if window.is_key_down(Key::Q) {
-        movement.y += movement_speed;
-    }
-    if window.is_key_down(Key::E) {
-        movement.y -= movement_speed;
-    }
-    if movement.magnitude() > 0.0 {
-        camera.move_center(movement);
-    }
-
-    // Camera zoom controls
+    // Rotación de la cámara (mirando arriba/abajo)
     if window.is_key_down(Key::Up) {
-        camera.zoom(zoom_speed);
+        camera.rotate_pitch(-rotation_speed);
     }
     if window.is_key_down(Key::Down) {
+        camera.rotate_pitch(rotation_speed);
+    }
+
+    // Movimiento WASD (adelante, izquierda, atrás, derecha)
+    let forward = camera.get_forward() * movement_speed;
+    let right = camera.get_right() * movement_speed;
+    
+    if window.is_key_down(Key::W) {
+        camera.move_forward(movement_speed);
+    }
+    if window.is_key_down(Key::S) {
+        camera.move_forward(-movement_speed);
+    }
+    if window.is_key_down(Key::A) {
+        camera.move_right(-movement_speed);
+    }
+    if window.is_key_down(Key::D) {
+        camera.move_right(movement_speed);
+    }
+
+    // Movimiento vertical (Q para subir, E para bajar)
+    if window.is_key_down(Key::Q) {
+        camera.move_up(movement_speed);
+    }
+    if window.is_key_down(Key::E) {
+        camera.move_up(-movement_speed);
+    }
+
+    // Zoom (1 para acercar, 2 para alejar)
+    if window.is_key_down(Key::Key1) {
+        camera.zoom(zoom_speed);
+    }
+    if window.is_key_down(Key::Key2) {
         camera.zoom(-zoom_speed);
     }
 }
